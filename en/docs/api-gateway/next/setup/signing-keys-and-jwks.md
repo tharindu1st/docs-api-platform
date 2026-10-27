@@ -70,10 +70,11 @@ Mount the key file into the Gateway Runtime container as a read-only file. The k
 
 === "Kubernetes"
 
-    1. Store the key in a Secret. The key name in the Secret becomes the file name in the mounted directory:
+    1. Store the key in a Secret in the Gateway Runtime pod's namespace. The key name in the Secret becomes the file name in the mounted directory:
 
         ```bash
         kubectl create secret generic gateway-signing-keys \
+          --namespace <gateway-namespace> \
           --from-file=current.pem=signing-key.pem
         ```
 
@@ -167,7 +168,7 @@ The gateway serves the JWKS on every virtual host, on the same ports as API traf
 | Path | `/.well-known/jwks` |
 | Methods | `GET` and `HEAD`. Other methods return `405`. |
 | Content type | `application/jwk-set+json` |
-| Caching | `Cache-Control: public, max-age=<jwks_cache_max_age>` and an `ETag`. A request with a matching `If-None-Match` header returns `304 Not Modified`. |
+| Caching | `Cache-Control: public, max-age=<jwks_cache_max_age in seconds>` and an `ETag`. The default `"5m"` produces `max-age=300`. A request with a matching `If-None-Match` header returns `304 Not Modified`. |
 | Cross-origin access | `Access-Control-Allow-Origin: *` |
 | No keys configured | `200` with `{"keys":[]}` |
 
@@ -188,8 +189,9 @@ To verify a token the gateway signed:
 2. When a token arrives, read the `kid` from its header and select the key with that `kid` from the JWKS.
 3. Verify the signature with that key, and accept only the algorithm that key declares in its `alg` member.
 4. If no key matches the `kid`, fetch the JWKS again, because the gateway may have added a key since you last fetched it.
+5. Reject the token if its `exp` claim is in the past. If you configured an issuer in the signing policy, also check the `iss` claim. Check any other claims your backend depends on.
 
-Most JWT libraries do all of this when you give them a JWKS URL. Respect the `Cache-Control` header so your backend picks up new keys within `jwks_cache_max_age`.
+Most JWT libraries handle the key lookup and signature check when you give them a JWKS URL. Configure the claim checks in step 5 separately, because a JWKS URL alone does not turn them on. Respect the `Cache-Control` header so your backend picks up new keys within `jwks_cache_max_age`.
 
 ## Rotate a signing key
 
