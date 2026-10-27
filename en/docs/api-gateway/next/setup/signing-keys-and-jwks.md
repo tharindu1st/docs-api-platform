@@ -47,41 +47,54 @@ You don't need a certificate. The gateway derives the public key from the privat
 
 Mount the key file into the Gateway Runtime container as a read-only file. The key file must be readable by the gateway runtime user (user ID `10001`) and must not be readable by other users. Use file mode `0400` or `0440`. The gateway does not start if a configured key file is readable or writable by other users.
 
-For Docker Compose, prepare the file on the host and mount it into the `gateway-runtime` service:
+=== "Docker Compose"
 
-```bash
-mkdir -p signing
-cp signing-key.pem signing/current.pem
-sudo chown 10001:10001 signing/current.pem
-sudo chmod 0400 signing/current.pem
-```
+    1. Prepare the file on the host:
 
-```yaml
-services:
-  gateway-runtime:
-    volumes:
-      - ./configs/config.toml:/etc/policy-engine/config.toml:ro
-      - ./signing:/secrets/gateway-runtime/signing:ro
-```
+        ```bash
+        mkdir -p signing
+        cp signing-key.pem signing/current.pem
+        sudo chown 10001:10001 signing/current.pem
+        sudo chmod 0400 signing/current.pem
+        ```
 
-On Kubernetes, store the key in a Secret and mount it into the Gateway Runtime pod with `defaultMode: 0440`. Set the pod's `securityContext.fsGroup` to `10001` so the gateway runtime user can read the mounted file:
+    2. Mount the directory into the `gateway-runtime` service:
 
-```yaml
-spec:
-  securityContext:
-    fsGroup: 10001
-  volumes:
-    - name: signing-keys
-      secret:
-        secretName: gateway-signing-keys
-        defaultMode: 0440
-  containers:
-    - name: gateway-runtime
-      volumeMounts:
-        - name: signing-keys
-          mountPath: /secrets/gateway-runtime/signing
-          readOnly: true
-```
+        ```yaml
+        services:
+          gateway-runtime:
+            volumes:
+              - ./configs/config.toml:/etc/policy-engine/config.toml:ro
+              - ./signing:/secrets/gateway-runtime/signing:ro
+        ```
+
+=== "Kubernetes"
+
+    1. Store the key in a Secret. The key name in the Secret becomes the file name in the mounted directory:
+
+        ```bash
+        kubectl create secret generic gateway-signing-keys \
+          --from-file=current.pem=signing-key.pem
+        ```
+
+    2. Mount the Secret into the Gateway Runtime pod with `defaultMode: 0440`. Set the pod's `securityContext.fsGroup` to `10001` so the gateway runtime user can read the mounted file:
+
+        ```yaml
+        spec:
+          securityContext:
+            fsGroup: 10001
+          volumes:
+            - name: signing-keys
+              secret:
+                secretName: gateway-signing-keys
+                defaultMode: 0440
+          containers:
+            - name: gateway-runtime
+              volumeMounts:
+                - name: signing-keys
+                  mountPath: /secrets/gateway-runtime/signing
+                  readOnly: true
+        ```
 
 ### Step 2: Add the key to the gateway configuration
 
