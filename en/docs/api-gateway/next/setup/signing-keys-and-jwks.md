@@ -1,6 +1,6 @@
 ---
-title: "Gateway signing keys and the JWKS endpoint"
-description: "Configure API Platform Gateway signing keys, publish the public keys at /.well-known/jwks, rotate keys without downtime, and verify gateway-signed tokens."
+title: "Gateway signing keys and the JSON Web Key Set endpoint"
+description: "Configure API Platform Gateway signing keys, publish the public keys at /.well-known/jwks, rotate keys, and verify gateway-signed tokens."
 canonical_url: https://wso2.com/api-platform/docs/api-gateway/next/setup/signing-keys-and-jwks/
 md_url: https://wso2.com/api-platform/docs/api-gateway/next/setup/signing-keys-and-jwks.md
 tags:
@@ -13,7 +13,7 @@ last_updated: 2026-10-23
 content_type: "how-to"
 ---
 
-# Gateway signing keys and the JWKS endpoint
+# Gateway signing keys and the JSON Web Key Set endpoint
 
 This guide is for platform operators who configure the API Platform Gateway, and for backend owners who verify the tokens the gateway sends them.
 
